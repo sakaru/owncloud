@@ -387,7 +387,7 @@ class RoundcubeLogin {
      * @param string POST data in urlencoded form (param1=value1&...)
      * @return string Returns the complete request response with all headers.
      */
-    private function sendRequest($path, $postData, $rc_host) {
+    private function sendRequest($path, $postData = '') {
         $method = (!$postData) ? "GET" : "POST";
         $port = $this->rcPort;
         $url = "/".$path;
@@ -495,7 +495,7 @@ class RoundcubeLogin {
      * @param string Short action message
      * @param string Output data
      */
-    private function addDebug($action, $data) {
+    private function addDebug($action, $data = null) {
         OCP\Util::writeLog('roundcube','RoundcubeLogin.class.php: '.$action.': \n '.$data,OCP\Util::DEBUG);
     }
     
