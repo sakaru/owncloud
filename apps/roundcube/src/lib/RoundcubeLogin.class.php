@@ -171,6 +171,9 @@ class RoundcubeLogin {
      * @var array
      */
     private $debugStack;    
+
+    const UNSECURED_PORT = 80;
+    const SECURED_PORT   = 443;
     
     /**
      * Create a new RoundcubeLogin class.
@@ -207,10 +210,10 @@ class RoundcubeLogin {
             $this->rcPort = $urlSegments['port'];
         }
         else if ($this->rcSSL) {
-            $this->rcPort = 443;
+            $this->rcPort = self::UNSECURED_PORT;
         }
         else {
-            $this->rcPort = 80;
+            $this->rcPort = self::SECURED_PORT;
         }
         $this->addDebug("Creating new RoundCubeLogin instance:","rcHost:".$this->rcHost."rcPath:".$this->rcPath);
     }
