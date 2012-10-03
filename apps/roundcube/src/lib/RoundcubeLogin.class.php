@@ -116,6 +116,20 @@ class RoundcubeLogin {
      * @var string
      */
     private $rcHost;    
+
+    /**
+     * Whether the roundcube setup uses SSL
+     *
+     * @var boolean
+     **/
+    private $rcSSL;
+
+    /**
+     * The port the roundcube installation is on
+     *
+     * @var integer
+     **/
+    private $rcPort;
     
     
     /**
@@ -163,15 +177,42 @@ class RoundcubeLogin {
      *
      * @param string Relative webserver path to the RC installation, e.g. example.com/roundcube/
      */
-    public function __construct($webmailPath) {
+    public function __construct($roundcubeURL) {
         $this->debugStack = array();
-		// failback to local host 
-        $this->rcHost = $_SERVER['HTTP_HOST'];
-        $this->rcPath = $webmailPath;       
+        $urlSegments = parse_url($roundcubeURL);
+
+        if (isset($urlSegments['host'])) {
+            $this->rcHost = $urlSegments['host'];
+        }
+        else {
+            // failback to local host
+            $this->rcHost = $_SERVER['HTTP_HOST'];
+        }
+        if (isset($urlSegments['path'])) {
+            $this->rcPath = $urlSegments['path'];
+            if ($this->rcPath[0] === '/') {
+                $this->rcPath = substr($this->rcPath, 1);
+            }
+        }
+        else {
+            $this->rcPath = '';
+        }
+
         $this->rcSessionID = true;
         $this->rcSessionAuth = true;
         $this->rcLoginStatus = 0;    
-		$this->addDebug("Creating new RoundCubeLogin instance:","rcHost:".$this->rcHost."rcPath:".$this->rcPath);    
+        $this->rcSSL = (strtolower($urlSegments['scheme']) === 'https');
+
+        if (isset($urlSegments['port'])) {
+            $this->rcPort = $urlSegments['port'];
+        }
+        else if ($this->rcSSL) {
+            $this->rcPort = 443;
+        }
+        else {
+            $this->rcPort = 80;
+        }
+        $this->addDebug("Creating new RoundCubeLogin instance:","rcHost:".$this->rcHost."rcPath:".$this->rcPath);
     }
 	    
     /**
@@ -265,9 +306,9 @@ class RoundcubeLogin {
     }
 
 	public function getRedirectPath() {		
-        $port = ($_SERVER['HTTPS'] || $_SERVER['HTTP_X_FORWARDED_PROTO']=='https') ? 443 : 80;
-		$protocol = (($port == 443) ? "https://" : "http://");
-		$path= $protocol.$this->rcHost."/".$this->rcPath;
+        $port = $this->rcPort;
+        $protocol = (($this->rcSSL) ? "https://" : "http://");
+        $path= $protocol.$this->rcHost."/".$this->rcPath;
         return $path;
     }
     
@@ -348,10 +389,10 @@ class RoundcubeLogin {
      */
     private function sendRequest($path, $postData, $rc_host) {
         $method = (!$postData) ? "GET" : "POST";
-        $port = ($_SERVER['HTTPS'] || $_SERVER['HTTP_X_FORWARDED_PROTO']=='https') ? 443 : 80;
-		$url = "/".$path."/";		
-		$protocol = (($port == 443) ? "HTTPS/1.1" : "HTTP/1.1");
-        $host = (($port == 443) ? "ssl://" : "").$this->rcHost;
+        $port = $this->rcPort;
+        $url = "/".$path;
+        $protocol = "HTTP/1.1";
+        $host = (($this->rcSSL) ? "ssl://" : "").$this->rcHost;
 	
         $this->addDebug('Trying to connect via "'.$method.'" on port "'.$port.'" to URL "'.$url.'" on host"'.$host.'"');
         
